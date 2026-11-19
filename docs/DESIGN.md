@@ -54,8 +54,10 @@ browser's `sessionKey` cookie. We should **not** do that by default:
   403 from a non-browser client).
 * A long-lived session cookie on disk is a full account credential.
 
-So the hosted side is **assisted, not automated**: the tool does every step
-except the click and the signed-in download, which stay human.
+So by default the hosted side is **assisted, not automated**: the tool does every step
+except the click and the signed-in download, which stay human. An **opt-in**
+`cloud auto-export` clicks the button for you with a dedicated local browser
+profile, at most weekly (see README risk note and `core/autoexport.py`).
 
 ### 1.3 Local: Claude Code
 

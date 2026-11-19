@@ -8,7 +8,7 @@ setup(
     package_data={"cli_anything.claude_bak": ["skills/*.md"]},
     python_requires=">=3.10",
     install_requires=["click>=8.0.0"],
-    extras_require={"dev": ["pytest>=7"]},
+    extras_require={"dev": ["pytest>=7"], "browser": ["playwright>=1.40"]},
     entry_points={"console_scripts": [
         "cli-anything-claude-bak=cli_anything.claude_bak.claude_bak_cli:main",
     ]},

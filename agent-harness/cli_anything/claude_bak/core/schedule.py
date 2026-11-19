@@ -9,18 +9,20 @@ from pathlib import Path
 LABEL = "claude-dot-bak"
 
 
-def _command(dest: Path) -> list[str]:
+def _command(dest: Path, auto_export: bool = False) -> list[str]:
     exe = shutil.which("cli-anything-claude-bak")
     base = [exe] if exe else [sys.executable, "-m", "cli_anything.claude_bak"]
-    return base + ["--json", "backup", "run", "--dest", str(dest)]
+    return base + ["--json", "backup", "run", "--dest", str(dest)] + (
+        ["--auto-export"] if auto_export else [])
 
 
-def render(dest: Path, at: str = "03:30", platform: str | None = None) -> dict:
+def render(dest: Path, at: str = "03:30", platform: str | None = None,
+           auto_export: bool = False) -> dict:
     """Return {path: content} for the files to install, plus the commands to enable them."""
     platform = platform or sys.platform
     dest = Path(dest).expanduser().resolve()
     hh, mm = (int(x) for x in at.split(":"))
-    cmd = _command(dest)
+    cmd = _command(dest, auto_export)
     home = Path.home()
     if platform == "darwin":
         args = "\n".join(f"    <string>{a}</string>" for a in cmd)
@@ -83,8 +85,8 @@ def _uid() -> int:
     return os.getuid() if hasattr(os, "getuid") else 0
 
 
-def install(dest: Path, at: str, dry_run: bool) -> dict:
-    spec = render(dest, at)
+def install(dest: Path, at: str, dry_run: bool, auto_export: bool = False) -> dict:
+    spec = render(dest, at, auto_export=auto_export)
     if dry_run:
         return {"dry_run": True, **spec}
     for path, content in spec["files"].items():

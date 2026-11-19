@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-from .core import cloud, schedule, snapshot, sources
+from .core import autoexport, cloud, schedule, snapshot, sources
 
 DEFAULT_DEST = Path(os.environ.get("CLAUDE_BAK_DEST", Path.home() / "ClaudeBackups"))
 
@@ -107,12 +107,34 @@ def cloud_watch(ctx, downloads, dest):
     _out(ctx, {"ingested": cloud.watch(downloads, dest)})
 
 
+@backup_cloud.command("login")
+@click.pass_context
+def cloud_login(ctx):
+    """Opt-in auto-export: sign in once in a dedicated local browser profile."""
+    _out(ctx, autoexport.login())
+
+
+@backup_cloud.command("auto-export")
+@click.option("--every", default=autoexport.MIN_INTERVAL_DAYS, show_default=True,
+              help=f"Days between clicks (minimum {autoexport.MIN_INTERVAL_DAYS}).")
+@click.option("--headed", is_flag=True, help="Show the browser window.")
+@click.pass_context
+def cloud_auto_export(ctx, every, headed):
+    """Opt-in: click claude.ai's Export data button (at most weekly). See README risk note."""
+    r = autoexport.click_export(headless=not headed, interval_days=every)
+    _out(ctx, r)
+    if not r["clicked"] and not r.get("skipped"):
+        ctx.exit(2)
+
+
 @backup.command("run")
 @click.option("--dest", type=click.Path(path_type=Path), default=DEFAULT_DEST, show_default=True)
 @click.option("--cloud-every", default=30, show_default=True, help="Days between claude.ai exports.")
 @click.option("--redact-mcp-env", is_flag=True)
+@click.option("--auto-export", is_flag=True,
+              help="Opt-in: click claude.ai Export data when due (at most weekly).")
 @click.pass_context
-def backup_run(ctx, dest, cloud_every, redact_mcp_env):
+def backup_run(ctx, dest, cloud_every, redact_mcp_env, auto_export):
     """What the scheduler runs: local snapshot, pick up exports, remind when one is due."""
     result = {"local": snapshot.create(sources.discover(), dest, redact_mcp_env)}
     downloads = Path.home() / "Downloads"
@@ -120,6 +142,12 @@ def backup_run(ctx, dest, cloud_every, redact_mcp_env):
     age = cloud.last_export_age_days(dest)
     result["cloud_export_age_days"] = age
     result["cloud_export_due"] = age is None or age >= cloud_every
+    if auto_export:
+        try:
+            result["auto_export"] = autoexport.click_export(
+                interval_days=max(cloud_every, autoexport.MIN_INTERVAL_DAYS))
+        except Exception as e:  # never let the browser step break local backups
+            result["auto_export"] = {"clicked": False, "error": str(e)}
     _out(ctx, result)
 
 
@@ -158,9 +186,10 @@ def schedule_():
 @click.option("--at", default="03:30", show_default=True, help="Local time HH:MM.")
 @click.option("--dest", type=click.Path(path_type=Path), default=DEFAULT_DEST, show_default=True)
 @click.option("--dry-run", is_flag=True, help="Print what would be installed.")
+@click.option("--auto-export", is_flag=True, help="Opt-in: include the weekly export click.")
 @click.pass_context
-def schedule_install(ctx, at, dest, dry_run):
-    r = schedule.install(dest, at, dry_run)
+def schedule_install(ctx, at, dest, dry_run, auto_export):
+    r = schedule.install(dest, at, dry_run, auto_export)
 
     def human(d):
         for path, content in d.get("files", {}).items():
