@@ -151,7 +151,7 @@ activemq-data/
 
 # Environments
 .env
-.envrc
+# .envrc is committed on purpose (use flake + just list)
 .venv
 env/
 venv/
@@ -221,3 +221,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# direnv / nix
+.direnv/
+result
+result-*
