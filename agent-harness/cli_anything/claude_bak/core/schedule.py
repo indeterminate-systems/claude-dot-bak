@@ -1,6 +1,7 @@
 """Native schedulers: systemd user timer, launchd agent, Windows Task Scheduler."""
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -10,7 +11,10 @@ LABEL = "claude-dot-bak"
 
 
 def _command(dest: Path, auto_export: bool = False) -> list[str]:
-    exe = shutil.which("cli-anything-claude-bak")
+    # Skip the dev-shell shim in .direnv/: it only works inside the repo's shell.
+    path = os.pathsep.join(p for p in os.environ.get("PATH", "").split(os.pathsep)
+                           if ".direnv" not in p)
+    exe = shutil.which("cli-anything-claude-bak", path=path)
     base = [exe] if exe else [sys.executable, "-m", "cli_anything.claude_bak"]
     return base + ["--json", "backup", "run", "--dest", str(dest)] + (
         ["--auto-export"] if auto_export else [])
