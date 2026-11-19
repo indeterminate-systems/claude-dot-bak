@@ -186,6 +186,47 @@ pull uploaded files and per-conversation JSON through your **already open,
 signed-in browser** (Claude in Chrome / CDP), rate-limited and read-only. We
 recommend leaving this out until the official export proves insufficient.
 
+### 2.6 Per-project mirror into a private GitHub repo
+
+The official export's coverage is uncertain, so each Claude project can also be
+mirrored by **Claude itself, from inside the project**, using the tools a
+project session already has. This is the product's own access path, not
+scraping, so it stays within the Terms.
+
+What a project session can read today (checked 2026-11-19):
+
+| Content | How the routine reads it | In the official export? |
+| - | - | - |
+| Project chat | `read_project_chat` | Unclear |
+| Every thread, full transcript | `list_threads` + `read_thread` | Unclear |
+| Project memory (`MEMORY.md` + notes) | memory folder on disk | Probably not |
+| Project files (`/mnt/project-files/`, incl. uploads) | file copy | **No** (uploads are excluded) |
+| Artifacts (HTML, published files, comments, data) | `Artifact list/read`, `ArtifactData` | Artifact source only if in chat messages |
+| Docs | Claude Docs `read`/`export` | Unknown |
+| Project instructions, repos, settings | session context | Partly |
+| PRs/code | already in the project's repos | n/a |
+
+Not covered: regular claude.ai chats outside projects. For those, use the
+official export (2.3). **Don't** snapshot the cloud sandbox itself: it is
+temporary and holds proxy credentials and tokens.
+
+Layout, one private repo per project (`<project>-claude-ai--cloud-environment`):
+
+```
+README.md                 project name, topic, instructions, repos, last run
+chat/project-chat.md      top-level messages, oldest first
+threads/<date>-<slug>.md  one file per thread (+ .json raw)
+memory/                   copy of project memory
+files/                    copy of project files
+artifacts/<slug>/         index.html, published files, comments.json, data.json
+docs/<slug>.md            Claude Docs as Markdown
+```
+
+Run as a **scheduled task in each project** (daily). Each run rewrites the tree
+and commits only the diff, so git history works as versioning. The repo must exist
+and be attached to the project first. Creating repos stays a manual step for the
+user.
+
 ---
 
 ## 3. Plan
