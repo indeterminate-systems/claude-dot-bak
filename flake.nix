@@ -50,17 +50,14 @@
           packages = [
             (py.withPackages (ps: [ ps.click ps.playwright ps.pytest ps.setuptools ]))
             pkgs.git
+            pkgs.just
           ];
           shellHook = ''
-            export PYTHONPATH="$PWD/agent-harness''${PYTHONPATH:+:$PYTHONPATH}"
-            # Run the CLI straight from the working tree.
-            mkdir -p .direnv/bin
-            cat > .direnv/bin/cli-anything-claude-bak <<EOF
-            #!/usr/bin/env bash
-            exec python -m cli_anything.claude_bak "\$@"
-            EOF
-            chmod +x .direnv/bin/cli-anything-claude-bak
-            export PATH="$PWD/.direnv/bin:$PATH"
+            root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+            export PYTHONPATH="$root/agent-harness''${PYTHONPATH:+:$PYTHONPATH}"
+            export CLAUDE_BAK_DEVSHELL=1
+            # direnv prints the list from .envrc; plain `nix develop` prints it here.
+            if [ -z "''${DIRENV_IN_ENVRC:-}" ]; then (cd "$root" && just --list --unsorted); fi
           '';
         } // playwrightEnv);
 

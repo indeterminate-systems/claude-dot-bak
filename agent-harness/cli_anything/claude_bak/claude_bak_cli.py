@@ -189,7 +189,10 @@ def schedule_():
 @click.option("--auto-export", is_flag=True, help="Opt-in: include the weekly export click.")
 @click.pass_context
 def schedule_install(ctx, at, dest, dry_run, auto_export):
-    r = schedule.install(dest, at, dry_run, auto_export)
+    try:
+        r = schedule.install(dest, at, dry_run, auto_export)
+    except RuntimeError as e:
+        raise click.ClickException(str(e))
 
     def human(d):
         for path, content in d.get("files", {}).items():

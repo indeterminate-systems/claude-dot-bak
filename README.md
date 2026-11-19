@@ -6,27 +6,27 @@ schedule, packaged as a [CLI-Anything](https://github.com/HKUDS/CLI-Anything) ha
 * Design and research: [docs/DESIGN.md](docs/DESIGN.md)
 * Prototype CLI: [agent-harness/](agent-harness/)
 
-## Setup (Nix + direnv)
+## Setup (Nix + direnv + just)
 
 ```sh
-direnv allow                    # enters the dev shell via .envrc (use flake)
-nix profile install .           # puts cli-anything-claude-bak on your PATH for the scheduler
+direnv allow        # loads the flake dev shell and prints the `just` recipes
+just install        # nix profile install . (the scheduler needs the installed CLI)
 ```
 
-Without direnv: `nix develop` for the dev shell, `nix run . -- <args>` for one-off runs.
-Playwright and Chromium come from nixpkgs, so there's nothing to `playwright install`.
+Then `just` lists everything. The usual flow:
 
 ```sh
-cli-anything-claude-bak scan                       # what's on this machine
-cli-anything-claude-bak backup local               # snapshot to ~/ClaudeBackups
-cli-anything-claude-bak verify
-cli-anything-claude-bak backup cloud request       # opens claude.ai export page
-cli-anything-claude-bak backup cloud ingest ~/Downloads/data-*.zip
-cli-anything-claude-bak schedule install --at 03:30 --dry-run
+just scan           # what Claude data is on this machine
+just local          # snapshot to ~/ClaudeBackups
+just verify
+just login          # claude.ai sign-in, once (opt-in auto-export)
+just export         # click Export data now, browser visible
+just schedule       # daily 03:30 run, auto-export at most weekly
+just now && just log
 ```
 
-Tests: `pytest agent-harness` in the dev shell, or `nix flake check`.
-
+Without direnv: `nix develop` (also prints the list), or `nix run . -- <args>`.
+Playwright and Chromium come from nixpkgs. Tests: `just test` or `nix flake check`.
 Without Nix: `pip install -e 'agent-harness[browser]' && playwright install chromium`.
 
 ## Optional: automate the claude.ai export click

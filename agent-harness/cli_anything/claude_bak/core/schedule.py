@@ -10,11 +10,15 @@ from pathlib import Path
 LABEL = "claude-dot-bak"
 
 
-def _command(dest: Path, auto_export: bool = False) -> list[str]:
-    # Skip the dev-shell shim in .direnv/: it only works inside the repo's shell.
+def _installed() -> str | None:
+    # Skip the dev-shell shims: they only work inside the repo's shell.
     path = os.pathsep.join(p for p in os.environ.get("PATH", "").split(os.pathsep)
                            if ".direnv" not in p)
-    exe = shutil.which("cli-anything-claude-bak", path=path)
+    return shutil.which("cli-anything-claude-bak", path=path)
+
+
+def _command(dest: Path, auto_export: bool = False) -> list[str]:
+    exe = _installed()
     base = [exe] if exe else [sys.executable, "-m", "cli_anything.claude_bak"]
     return base + ["--json", "backup", "run", "--dest", str(dest)] + (
         ["--auto-export"] if auto_export else [])
@@ -90,6 +94,9 @@ def _uid() -> int:
 
 
 def install(dest: Path, at: str, dry_run: bool, auto_export: bool = False) -> dict:
+    if not dry_run and os.environ.get("CLAUDE_BAK_DEVSHELL") and not _installed():
+        raise RuntimeError("Install the CLI first so the schedule doesn't depend on the dev "
+                           "shell: nix profile install .")
     spec = render(dest, at, auto_export=auto_export)
     if dry_run:
         return {"dry_run": True, **spec}
